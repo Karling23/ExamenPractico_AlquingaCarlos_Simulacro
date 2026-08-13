@@ -1,0 +1,109 @@
+{
+  "info": {
+    "_postman_id": "b2d2c3f0-aaaa-bbbb-cccc-123456789000",
+    "name": "Vehiculos API (Django + Postgres + Mongo)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "vehicleId", "value": "" },
+    { "key": "rentalId", "value": "" },
+    { "key": "fleetLogId", "value": "" },
+    { "key": "rentalEventId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (Public) - POST /api/auth/register/",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/register/", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register", ""] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user1\",\n  \"email\": \"user1@mail.com\",\n  \"password\": \"123456\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (JWT) - POST /api/auth/login/ (save tokens)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let jsonData = {};",
+                  "try { jsonData = pm.response.json(); } catch (e) {}",
+                  "if (jsonData.access) pm.collectionVariables.set('accessToken', jsonData.access);",
+                  "if (jsonData.refresh) pm.collectionVariables.set('refreshToken', jsonData.refresh);",
+                  "pm.test('Token access recibido', function () { pm.expect(jsonData.access).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login/", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login", ""] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}" }
+          }
+        },
+        {
+          "name": "Refresh (JWT) - POST /api/auth/refresh/ (save access)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let jsonData = {};",
+                  "try { jsonData = pm.response.json(); } catch (e) {}",
+                  "if (jsonData.access) pm.collectionVariables.set('accessToken', jsonData.access);",
+                  "pm.test('Token access refrescado', function () { pm.expect(jsonData.access).to.be.a('string'); });"
+                ]
+              }
+            }
+          ],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": { "raw": "{{baseUrl}}/api/auth/refresh/", "host": ["{{baseUrl}}"], "path": ["api", "auth", "refresh", ""] }, "body": { "mode": "raw", "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}" } }
+        }
+      ]
+    },
+    {
+      "name": "Vehicles",
+      "item": [
+        { "name": "List vehicles (Public) - GET /api/vehicles/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/vehicles/", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", ""] } } },
+        { "name": "Create vehicle (Auth) - POST /api/vehicles/ (save vehicleId)", "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "let jsonData = {};", "try { jsonData = pm.response.json(); } catch (e) {}", "if (jsonData.id) pm.collectionVariables.set('vehicleId', jsonData.id);", "pm.test('Vehículo creado', function () { pm.expect(jsonData.id).to.be.ok; });" ] } } ], "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{accessToken}}" } ], "url": { "raw": "{{baseUrl}}/api/vehicles/", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", ""] }, "body": { "mode": "raw", "raw": "{\n  \"plate\": \"ABC-1234\",\n  \"brand\": \"Toyota\",\n  \"daily_rate\": \"35.00\",\n  \"is_available\": true\n}" } } },
+        { "name": "Get vehicle by id (Public) - GET /api/vehicles/:id/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/vehicles/{{vehicleId}}/", "host": ["{{baseUrl}}"], "path": ["api", "vehicles", "{{vehicleId}}", ""] } } }
+      ]
+    },
+    {
+      "name": "Rentals",
+      "item": [
+        { "name": "List rentals (Auth) - GET /api/rentals/", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ], "url": { "raw": "{{baseUrl}}/api/rentals/", "host": ["{{baseUrl}}"], "path": ["api", "rentals", ""] } } },
+        { "name": "Create rental (Auth) - POST /api/rentals/ (save rentalId)", "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "let jsonData = {};", "try { jsonData = pm.response.json(); } catch (e) {}", "if (jsonData.id) pm.collectionVariables.set('rentalId', jsonData.id);", "pm.test('Rental creado', function () { pm.expect(jsonData.id).to.be.ok; });" ] } } ], "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{accessToken}}" } ], "url": { "raw": "{{baseUrl}}/api/rentals/", "host": ["{{baseUrl}}"], "path": ["api", "rentals", ""] }, "body": { "mode": "raw", "raw": "{\n  \"vehicle_id\": {{vehicleId}},\n  \"customer_name\": \"Juan Pérez\",\n  \"total\": \"120.00\",\n  \"status\": \"RESERVED\"\n}" } } },
+        { "name": "Get rental by id (Auth) - GET /api/rentals/:id/", "request": { "method": "GET", "header": [ { "key": "Authorization", "value": "Bearer {{accessToken}}" } ], "url": { "raw": "{{baseUrl}}/api/rentals/{{rentalId}}/", "host": ["{{baseUrl}}"], "path": ["api", "rentals", "{{rentalId}}", ""] } } }
+      ]
+    },
+    {
+      "name": "Fleet Logs",
+      "item": [
+        { "name": "List fleet logs (Public) - GET /api/fleet-logs/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/fleet-logs/", "host": ["{{baseUrl}}"], "path": ["api", "fleet-logs", ""] } } },
+        { "name": "Create fleet log (Public) - POST /api/fleet-logs/ (save fleetLogId)", "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "let jsonData = {};", "try { jsonData = pm.response.json(); } catch (e) {}", "if (jsonData._id) pm.collectionVariables.set('fleetLogId', jsonData._id);", "pm.test('Fleet log creado', function () { pm.expect(jsonData._id).to.be.ok; });" ] } } ], "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/fleet-logs/", "host": ["{{baseUrl}}"], "path": ["api", "fleet-logs", ""] }, "body": { "mode": "raw", "raw": "{\n  \"vehicle_plate\": \"ABC-1234\",\n  \"timestamp\": \"2026-08-12T12:00:00Z\",\n  \"location\": \"Quito\",\n  \"status\": \"OK\"\n}" } } },
+        { "name": "Get fleet log by id (Public) - GET /api/fleet-logs/:id/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/fleet-logs/{{fleetLogId}}/", "host": ["{{baseUrl}}"], "path": ["api", "fleet-logs", "{{fleetLogId}}", ""] } } }
+      ]
+    },
+    {
+      "name": "Rental Events",
+      "item": [
+        { "name": "List rental events (Public) - GET /api/rental-events/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rental-events/", "host": ["{{baseUrl}}"], "path": ["api", "rental-events", ""] } } },
+        { "name": "Create rental event (Public) - POST /api/rental-events/ (save rentalEventId)", "event": [ { "listen": "test", "script": { "type": "text/javascript", "exec": [ "let jsonData = {};", "try { jsonData = pm.response.json(); } catch (e) {}", "if (jsonData._id) pm.collectionVariables.set('rentalEventId', jsonData._id);", "pm.test('Rental event creado', function () { pm.expect(jsonData._id).to.be.ok; });" ] } } ], "request": { "method": "POST", "header": [ { "key": "Content-Type", "value": "application/json" } ], "url": { "raw": "{{baseUrl}}/api/rental-events/", "host": ["{{baseUrl}}"], "path": ["api", "rental-events", ""] }, "body": { "mode": "raw", "raw": "{\n  \"rental_id\": \"{{rentalId}}\",\n  \"event_type\": \"START\",\n  \"notes\": \"Inicio del alquiler\"\n}" } } },
+        { "name": "Get rental event by id (Public) - GET /api/rental-events/:id/", "request": { "method": "GET", "url": { "raw": "{{baseUrl}}/api/rental-events/{{rentalEventId}}/", "host": ["{{baseUrl}}"], "path": ["api", "rental-events", "{{rentalEventId}}", ""] } } }
+      ]
+    }
+  ]
+}
